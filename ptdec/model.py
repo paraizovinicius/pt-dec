@@ -72,21 +72,34 @@ def train(
         disable=silent,
     )
     kmeans = KMeans(n_clusters=model.cluster_number, n_init=20)
-    model.train()
+    model.train() # setting the model into training mode.
     features = []
     actual = []
+    
+    
     # form initial cluster centres
     for index, batch in enumerate(data_iterator):
         if (isinstance(batch, tuple) or isinstance(batch, list)) and len(batch) == 2:
             batch, value = batch  # if we have a prediction label, separate it to actual
-            actual.append(value)
+            actual.append(value) # "y_test"
         if cuda:
             batch = batch.cuda(non_blocking=True)
         features.append(model.encoder(batch).detach().cpu())
-    actual = torch.cat(actual).long()
+        
+    print("\n\nActual length: ",len(actual))
+    # RuntimeError: torch.cat(): expected a non-empty list of Tensors  
+    if len(actual) > 0:
+        actual = torch.cat(actual).long()
+        
+        print("\n\n\n\nMNIST\n\n\n")
+    else:
+        actual = torch.empty(0, dtype=torch.long)
+        
+    
+    accuracy = 0 # target = target_distribution(predicted).detach()
+    #_, accuracy = cluster_accuracy(predicted, actual.cpu().numpy()) # os labels são usados aqui
     predicted = kmeans.fit_predict(torch.cat(features).numpy())
     predicted_previous = torch.tensor(np.copy(predicted), dtype=torch.long)
-    _, accuracy = cluster_accuracy(predicted, actual.cpu().numpy())
     cluster_centers = torch.tensor(
         kmeans.cluster_centers_, dtype=torch.float, requires_grad=True
     )
@@ -95,7 +108,7 @@ def train(
     with torch.no_grad():
         # initialise the cluster centers
         model.state_dict()["assignment.cluster_centers"].copy_(cluster_centers)
-    loss_function = nn.KLDivLoss(size_average=False)
+    loss_function = nn.KLDivLoss(reduction='sum')
     delta_label = None
     for epoch in range(epochs):
         features = []
@@ -111,7 +124,8 @@ def train(
             },
             disable=silent,
         )
-        model.train()
+        model.train() # ensure the model is in the correct mode before train loop
+        # TRAIN LOOP
         for index, batch in enumerate(data_iterator):
             if (isinstance(batch, tuple) or isinstance(batch, list)) and len(
                 batch
@@ -119,8 +133,23 @@ def train(
                 batch, _ = batch  # if we have a prediction label, strip it away
             if cuda:
                 batch = batch.cuda(non_blocking=True)
-            output = model(batch)
-            target = target_distribution(output).detach()
+            output = model(batch) 
+            # model é o Encoder +  (assignment): ClusterAssignment()   
+            # output será Q
+            # tem shape [len(batch), num_clusters]
+            # exemplo: torch.Size([230, 10])  
+
+            
+            # Target Distribution P (possui mesmo shape de Q)
+            target = target_distribution(output).detach() #  Compute the target distribution p_ij, given the batch (q_ij)
+            
+            pred_labels = output.argmax(dim=1) # possui len() de len(batch)
+            pred_target = target.argmax(dim=1) 
+            pred_labels_np = pred_labels.detach().cpu().numpy()  
+            true_labels_np = pred_target.detach().cpu().numpy()  
+            _, accuracy = cluster_accuracy(pred_labels_np, true_labels_np) 
+            
+            # KL Loss
             loss = loss_function(output.log(), target) / output.shape[0]
             data_iterator.set_postfix(
                 epo=epoch,
@@ -142,33 +171,45 @@ def train(
                 )
                 if update_callback is not None:
                     update_callback(accuracy, loss_value, delta_label)
-        predicted, actual = predict(
-            dataset,
-            model,
-            batch_size=evaluate_batch_size,
-            collate_fn=collate_fn,
-            silent=True,
-            return_actual=True,
-            cuda=cuda,
-        )
-        delta_label = (
-            float((predicted != predicted_previous).float().sum().item())
-            / predicted_previous.shape[0]
-        )
-        if stopping_delta is not None and delta_label < stopping_delta:
-            print(
-                'Early stopping as label delta "%1.5f" less than "%1.5f".'
-                % (delta_label, stopping_delta)
+        
+                    
+                    
+        #     ValueError: too many values to unpack (expected 2)    
+        #     para que serve essa função abaixo?
+        
+        if(len(actual)>0):
+            pred = predict(
+                dataset,
+                model,
+                batch_size=evaluate_batch_size,
+                collate_fn=collate_fn,
+                silent=True,
+                return_actual=False, # precisa retornar False já que Empenhos não tem actuals
+                cuda=cuda,
+            ) # retorna uma tupla (predicted) e um tensor (actual)
+
+                
+            delta_label = (
+                float((pred != predicted_previous).float().sum().item())
+                / predicted_previous.shape[0]
             )
-            break
-        predicted_previous = predicted
-        _, accuracy = cluster_accuracy(predicted.cpu().numpy(), actual.cpu().numpy())
-        data_iterator.set_postfix(
-            epo=epoch,
-            acc="%.4f" % (accuracy or 0.0),
-            lss="%.8f" % 0.0,
-            dlb="%.4f" % (delta_label or 0.0),
-        )
+            print("\n\nDelta Label: ", delta_label)
+            print("Stopping Delta: ", stopping_delta)
+            if stopping_delta is not None and delta_label < stopping_delta:
+                print(
+                    'Early stopping as label delta "%1.5f" less than "%1.5f".'
+                    % (delta_label, stopping_delta)
+                )
+                break
+            predicted_previous = pred
+            
+            _, accuracy = cluster_accuracy(pred.cpu().numpy(), actual.cpu().numpy())
+            data_iterator.set_postfix(
+                epo=epoch,
+                acc="%.4f" % (accuracy or 0.0),
+                lss="%.8f" % 0.0,
+                dlb="%.4f" % (delta_label or 0.0),
+            )
         if epoch_callback is not None:
             epoch_callback(epoch, model)
 
@@ -200,7 +241,7 @@ def predict(
     data_iterator = tqdm(dataloader, leave=True, unit="batch", disable=silent,)
     features = []
     actual = []
-    model.eval()
+    model.eval() # colocar o modelo em formato de evaluation
     for batch in data_iterator:
         if (isinstance(batch, tuple) or isinstance(batch, list)) and len(batch) == 2:
             batch, value = batch  # unpack if we have a prediction label
@@ -217,5 +258,5 @@ def predict(
         )  # move to the CPU to prevent out of memory on the GPU
     if return_actual:
         return torch.cat(features).max(1)[1], torch.cat(actual).long()
-    else:
-        return torch.cat(features).max(1)[1]
+    else: # retorna os vetores X e os labels correspondentes
+        return torch.cat(features),torch.cat(features).max(1)[1]

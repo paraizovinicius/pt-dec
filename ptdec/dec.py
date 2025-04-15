@@ -23,9 +23,9 @@ class DEC(nn.Module):
         """
         super(DEC, self).__init__()
         self.encoder = encoder
-        self.hidden_dimension = hidden_dimension
-        self.cluster_number = cluster_number
-        self.alpha = alpha
+        self.hidden_dimension = hidden_dimension # 10
+        self.cluster_number = cluster_number # config[num_clusters]
+        self.alpha = alpha # default
         self.assignment = ClusterAssignment(
             cluster_number, self.hidden_dimension, alpha
         )

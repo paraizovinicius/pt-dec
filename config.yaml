@@ -1,0 +1,18 @@
+csv_path: 'tce_fit.csv'
+output_dir: 'output_parquets'
+output_embeddings: 'embeds'
+
+
+# Embedding config
+embedding_model: 'sentence-transformers/all-MiniLM-L12-v1' # sentence-transformers/all-MiniLM-L12-v1 // sentence-transformers/facebook-dpr-ctx_encoder-multiset-base // tomaarsen/static-similarity-mrl-multilingual-v1
+embedding_batch_size: 128 # computaçao paralela para fazer os embeddings
+batch_size: 512
+
+# Categorization config
+threshold_reducing_units: 95 # parametro de reduçao das colunas para serem categorizadas
+
+
+# Deep Clustering config
+num_clusters_testing: 10
+num_clusters: 100
+input_dim: 384  # Your embedding dimension (dimensão da variável X)

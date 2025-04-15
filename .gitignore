@@ -25,3 +25,20 @@ MANIFEST
 
 # Jupyter Notebook
 .ipynb_checkpoints
+
+
+# embeddings
+/embeds
+
+# dataset_stats
+/dataset_stats
+
+# data
+/runs
+examples/mnist/data
+examples/mnist/runs
+*/__pycache__
+
+# pngs
+confusion.png
+
