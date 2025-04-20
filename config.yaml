@@ -15,5 +15,5 @@ threshold_reducing_units: 95 # parametro de reduçao das colunas para serem cate
 
 # Deep Clustering config
 num_clusters_testing: 10
-num_clusters: 100
+num_clusters: 56 # numero otimal de clusters, encontrado através do elbow method
 input_dim: 388  # Your embedding dimension (dimensão da variável X)
