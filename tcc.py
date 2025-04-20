@@ -89,7 +89,7 @@ def main(cuda, batch_size, pretrain_epochs, finetune_epochs, testing_mode):
     """
 
     autoencoder = StackedDenoisingAutoEncoder(
-        [config['input_dim'], 500, 500, 2000, num_clusters], final_activation=None
+        [config['input_dim'], 1000, 2000, 2000, num_clusters], final_activation=None
     )
     if cuda:
         autoencoder.cuda()
@@ -140,10 +140,18 @@ def main(cuda, batch_size, pretrain_epochs, finetune_epochs, testing_mode):
         ds_train, model, 1024, silent=True, return_actual=False, cuda=cuda
     )
     # np.bincount(predicted.cpu().numpy()).argmax() gives you the most frequent label
+    
+    
+    
+    # pensar em métodos de avaliação
     score = silhouette_score(X, predicted)
     print(f"Silhouette Score: {score:.4f}")
     
     
+    
+    # salvando o modelo para testes de inferência
+    torch.save(autoencoder, os.path.join(config['saved_models_dir'], "autoencoder_full.pt"))
+    torch.save(model, os.path.join(config['saved_models_dir'], "dec_model_full.pt"))
     
     writer.close()
 

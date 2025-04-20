@@ -86,7 +86,7 @@ def train(
             batch = batch.cuda(non_blocking=True)
         features.append(model.encoder(batch).detach().cpu())
         
-    print("\n\nActual length: ",len(actual))
+    #print("\n\nActual length: ",len(actual))
     # RuntimeError: torch.cat(): expected a non-empty list of Tensors  
     if len(actual) > 0:
         actual = torch.cat(actual).long()
@@ -147,7 +147,7 @@ def train(
             pred_target = target.argmax(dim=1) 
             pred_labels_np = pred_labels.detach().cpu().numpy()  
             true_labels_np = pred_target.detach().cpu().numpy()  
-            _, accuracy = cluster_accuracy(pred_labels_np, true_labels_np) 
+            _, accuracy = cluster_accuracy(pred_labels_np, true_labels_np) # not a good measure
             
             # KL Loss
             loss = loss_function(output.log(), target) / output.shape[0]
