@@ -11,6 +11,11 @@ conda create --name your_env_name python=3.7
 ```
 Replace `your_env_name` with a name of your choice for the environment.
 
+Once your env activated, run:
+```bash
+pip install -r requirements.txt
+```
+
 This follows (*or attempts to; note this implementation is unofficial*) the algorithm described in "Unsupervised Deep Embedding for Clustering Analysis" of Junyuan Xie, Ross Girshick, Ali Farhadi (<https://arxiv.org/abs/1511.06335>).
 
 ## Examples
