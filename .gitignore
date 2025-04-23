@@ -33,6 +33,9 @@ MANIFEST
 # dataset_stats
 /dataset_stats
 
+# saved models
+/saved_models
+
 # data
 /runs
 examples/mnist/data

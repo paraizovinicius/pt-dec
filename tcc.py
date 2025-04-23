@@ -71,10 +71,10 @@ def main(cuda, batch_size, pretrain_epochs, finetune_epochs, testing_mode):
         )
 
     ds_train = EMPENHOS(
-        train=True, cuda=cuda, testing_mode=testing_mode
+        train=True, testing_mode=testing_mode
     )  # training dataset
     ds_val = EMPENHOS(
-        train=False, cuda=cuda, testing_mode=testing_mode
+        train=False, testing_mode=testing_mode
     )  # evaluation dataset
 
     

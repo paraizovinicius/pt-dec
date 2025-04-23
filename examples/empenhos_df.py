@@ -9,9 +9,8 @@ from sklearn.preprocessing import StandardScaler
 
 
 class EMPENHOS(Dataset):
-    def __init__(self, train=True, cuda=False, testing_mode=False):
+    def __init__(self, train=True, testing_mode=False):
         self.testing_mode = testing_mode
-        self.cuda = cuda
 
         # Load config
         with open('config.yaml') as f:
@@ -75,9 +74,6 @@ class EMPENHOS(Dataset):
             self.X = X[split_idx:]    
             
         
-        # Move to CUDA if required
-        if self.cuda:
-            self.X = self.X.cuda(non_blocking=True)
 
     def __getitem__(self, index):
         return self.X[index]  # No label, unsupervised
